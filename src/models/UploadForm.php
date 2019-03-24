@@ -4,7 +4,9 @@ namespace paw\storage\models;
 use Yii;
 use yii\base\Model;
 use yii\base\InvalidConfigException;
-use yii\storage\models\File;
+use yii\web\UploadedFile;
+use yii\helpers\ArrayHelper;
+use paw\storage\models\File;
 
 class UploadForm extends Model
 {
@@ -15,11 +17,15 @@ class UploadForm extends Model
 
     public $extensions = null;
 
-    public $maxFiles = 0;
+    public $maxFiles = null;
 
     public $mode = self::MODE_ONE;
 
     public $uploadDir = null;
+
+    public $url = null;
+
+    public $fileParam = 'file';
 
     public function init()
     {
@@ -35,8 +41,17 @@ class UploadForm extends Model
     public function rules()
     {
         return [
-            [['file'], 'file', 'skipOnEmpty' => false, 'extensions' => $this->extensions, $maxFiles = $this->maxFiles],
+            ArrayHelper::merge(
+                [['file'], 'file', 'skipOnEmpty' => false, 'extensions' => $this->extensions, 'checkExtensionByMimeType' => false],
+                $this->maxFiles === null ? [] : ['maxFiles' => $this->maxFiles]
+            ),
         ];
+    }
+    
+    public function beforeValidate()
+    {
+        $this->file = $this->mode == self::MODE_ONE ? UploadedFile::getInstanceByName($this->fileParam) : UploadedFile::getInstancesByName($this->fileParam);
+        return parent::beforeValidate();
     }
 
     public function upload()
@@ -44,17 +59,20 @@ class UploadForm extends Model
         if (!$this->validate()) return false;
 
         try {
+            $fileModel = null;
             $transaction = Yii::$app->db->beginTransaction();
             if ($this->mode == self::MODE_MULTIPLE) {
+                $fileModel = [];
                 foreach ($this->file as $file) {
-                    if (!$this->uploadFile($file))
+                    if (!$model = $this->uploadFile($file))
                     {
                         $transaction->rollBacK();
                         return false;
                     }
+                    $fileModel[] = $model;
                 }
             } else {
-                if (!$this->uploadFile($this->file))
+                if (!$fileModel = $this->uploadFile($this->file))
                 {
                     $transaction->rollBacK();
                     return false;
@@ -62,7 +80,7 @@ class UploadForm extends Model
             }
 
             $transaction->commit();
-            return false;
+            return $fileModel;
         } catch (\Exception $ex) {
             $transaction->rollBacK();
             if (YII_DEBUG) throw $ex;
@@ -73,6 +91,7 @@ class UploadForm extends Model
     protected function uploadFile($file)
     {
         $uploadDir      = Yii::getAlias($this->uploadDir);
+        $url            = $this->url;
         $originalName   = $file->baseName;
         $extension      = $file->extension;
         $uploadName     = $this->getUploadName($uploadDir, $extension);
@@ -85,6 +104,7 @@ class UploadForm extends Model
 
         $model = new File([
             'path'      => $uploadDir,
+            'url'       => $url,
             'filename'  => "$uploadName.$extension",
             'name'      => "$originalName.$extension",
             'extension' => $extension,
@@ -97,7 +117,7 @@ class UploadForm extends Model
             return false;
         }
 
-        return true;
+        return $model;
     }
 
     protected function getUploadName($uploadDir, $extension)

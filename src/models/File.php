@@ -1,5 +1,5 @@
 <?php
-namespace paw\storage\records;
+namespace paw\storage\models;
 
 use Yii;
 use yii\db\ActiveRecord;
@@ -16,8 +16,6 @@ use paw\storage\records\FileMap;
 class File extends ActiveRecord
 {
     const SCENARIO_USE = 'scenario_use';
-
-    public $file;
 
     public function behaviors()
     {
@@ -36,78 +34,9 @@ class File extends ActiveRecord
     public function rules()
     {
         return [
-            [['file'], 'required', 'on' => 'default'],
-            [['file'], 'file', 'skipOnEmpty' => false, 'extensions' => 'png, jpg, bmp, gif', 'on' => 'default'],
-            [['file'], 'safe', 'on' => self::SCENARIO_USE],
             [['name', 'extension', 'type', 'mode', 'path', 'url'], 'string'],
             [['size'], 'integer'],
             [['is_dummy'], 'boolean'],
-        ];
-    }
-
-    // public function beforeSave($insert)
-    // {
-    //     if (!parent::beforeSave($insert)) return false;
-
-    //     $this->file = UploadedFile::getInstanceByName('file');
-
-    //     return true;
-    // }
-
-    public function beforeValidate() 
-    {
-        if(!parent::beforeValidate()) return false;
-        
-        $this->file = UploadedFile::getInstanceByName('file');
-        return true;
-    }
-
-    public function beforeSave($insert)
-    {
-        if (!parent::beforeSave($insert)) return false;
-
-        if ($insert)
-        {
-            $fileObject = $this->file;
-    
-            $extension  = $fileObject->extension;
-            $name       = $fileObject->name;
-            $size       = $fileObject->size;
-            $type       = $fileObject->type;
-    
-            $uploadDir = $this->getDummyPath();
-            $url = '/upload';
-    
-            do {
-                $fileName = uniqid() . '.' . $extension;
-                $uploadPath = $uploadDir . '/' . $fileName;
-            } while (file_exists($uploadPath));
-    
-            if (!$fileObject->saveAs($uploadPath)) return false;
-    
-            $this->extension = $extension;
-            $this->name = $name;
-            $this->size = $size;
-            $this->type = $type;
-            $this->filename = $fileName;
-            $this->path = $uploadDir;
-            $this->url = $url;
-        }
-
-        return true;
-    }
-
-    public function fields()
-    {
-        return [
-            'id' => 'id',
-            'name' => 'name',
-            'size' => 'size',
-            'extension' => 'extension',
-            'type' => 'type',
-            'link' => function ($model, $field) {
-                return (string) $model;
-            }
         ];
     }
 
