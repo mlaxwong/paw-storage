@@ -1,6 +1,6 @@
 {
     "name": "mlaxwong/paw-storage",
-    "type": "library",
+    "type": "paw-plugin",
     "license": "MIT",
     "authors": [
         {
