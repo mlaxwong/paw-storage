@@ -1,17 +1,15 @@
 <?php
 namespace paw\storage\models;
 
+use paw\behaviors\IpBehavior;
+use paw\behaviors\TimestampBehavior;
+use paw\storage\models\Bucket;
+use paw\storage\models\FileMap;
 use Yii;
+use yii\behaviors\BlameableBehavior;
 use yii\db\ActiveRecord;
 use yii\db\BaseActiveRecord;
-use yii\web\UploadedFile;
 use yii\helpers\Url;
-use yii\helpers\StringHelper;
-use yii\helpers\FileHelper;
-use yii\behaviors\BlameableBehavior;
-use paw\behaviors\TimestampBehavior;
-use paw\behaviors\IpBehavior;
-use paw\storage\records\FileMap;
 
 class File extends ActiveRecord
 {
@@ -42,7 +40,7 @@ class File extends ActiveRecord
 
     public function getStorageUrl()
     {
-        return dirname(URL::base(true));
+        return URL::base(true);
     }
 
     public function getDummyPath()
@@ -57,15 +55,18 @@ class File extends ActiveRecord
 
     public function getLink()
     {
-        $storageBaseUrl = $this->getStorageUrl();
-        $urlPath = ltrim($this->url, '/');
-        $fileName = $this->filename;
-        return $storageBaseUrl . '/' . $urlPath . '/' . $fileName;
+        $bucket = $this->bucket;
+        $baseUrl = $bucket->url;
+        $filename = $this->filename;
+        return Url::to("$baseUrl/$filename");
     }
 
     public function getFilePath()
     {
-        return $this->path . '/' . $this->filename;
+        $bucket = $this->bucket;
+        $dir = Yii::getAlias($bucket->path);
+        $filename = $this->filename;
+        return "$dir/$filename";
     }
 
     public function toString()
@@ -88,34 +89,34 @@ class File extends ActiveRecord
                 'file_id' => $this->id,
                 'model_class' => get_class($model),
                 'model_id' => $model->id,
-                'model_attribute' => $attribute, 
+                'model_attribute' => $attribute,
             ];
-            
-            if (FileMap::find()->andWhere($data)->exists()) return true;
+
+            if (FileMap::find()->andWhere($data)->exists()) {
+                return true;
+            }
 
             $map = new FileMap([
                 'file_id' => $this->id,
                 'model_class' => get_class($model),
                 'model_id' => $model->id,
-                'model_attribute' => $attribute, 
+                'model_attribute' => $attribute,
             ]);
-                
-            if (!$map->save())
-            {
+
+            if (!$map->save()) {
                 $transaction->rollBack();
                 return false;
             }
 
             $oldFile = $this->getFilePath();
             $storageDir = $this->getStoragePath();
-            
+
             do {
                 $fileName = uniqid() . '.' . $this->extension;
                 $movePath = $storageDir . '/' . $fileName;
             } while (file_exists($movePath));
 
-            if (!copy($oldFile, $movePath)) 
-            {
+            if (!copy($oldFile, $movePath)) {
                 $transaction->rollBack();
                 return false;
             }
@@ -125,14 +126,13 @@ class File extends ActiveRecord
             $this->url = '/storage';
             $this->is_dummy = false;
 
-            if (!$this->save())
-            {
+            if (!$this->save()) {
                 $transaction->rollBack();
                 return false;
             }
 
             unlink($oldFile);
-            
+
             $transaction->commit();
             return true;
         } catch (Exception $ex) {
@@ -141,5 +141,98 @@ class File extends ActiveRecord
             // if (YII_DEBUG) throw $ex;
             return false;
         }
+    }
+
+    public function belongTo(BaseActiveRecord $model, $attribute, $bucket)
+    {
+        $transaction = Yii::$app->db->beginTransaction();
+        $formBucket = $this->bucket;
+        try {
+            // move bucket
+            if (!$bucket->moveIn($this)) {
+                $transaction->rollBack();
+                return false;
+            }
+
+            $data = [
+                'file_id' => $this->id,
+                'model_class' => get_class($model),
+                'model_id' => $model->id,
+                'model_attribute' => $attribute,
+            ];
+
+            if (FileMap::find()->andWhere($data)->exists()) {
+                $transaction->commit();
+                return true;
+            }
+
+            $map = new FileMap([
+                'file_id' => $this->id,
+                'model_class' => get_class($model),
+                'model_id' => $model->id,
+                'model_attribute' => $attribute,
+            ]);
+
+            if (!$map->save()) {
+                // revert database
+                $transaction->rollBack();
+
+                // double check on bucket
+                $this->refresh();
+                if ($this->bucket_id !== $formBucket->id) {
+                    $formBucket->moveIn($this);
+                }
+                return false;
+            }
+
+            $transaction->commit();
+            return true;
+        } catch (Exception $ex) {
+            // revert database
+            $transaction->rollBack();
+
+            // double check on bucket
+            $this->refresh();
+            if ($this->bucket_id !== $formBucket->id) {
+                $formBucket->moveIn($this);
+            }
+
+            if (YII_DEBUG) {
+                throw $ex;
+            }
+            return false;
+        }
+    }
+
+    public function getBucket()
+    {
+        return $this->hasOne(Bucket::class, ['id' => 'bucket_id']);
+    }
+
+    public function deleteIfNoUsed($outdatedOwner, $attribute = null)
+    {
+        $mapQuery = FileMap::find()
+            ->andWhere(['file_id' => $this->id])
+            ->andWhere(['<>', 'model_class', get_class($outdatedOwner)])
+            ->andWhere(['<>', 'model_id', $outdatedOwner->id])
+        ;
+        if ($attribute) {
+            $mapQuery->andWhere(['<>', 'attribute', $attribute]);
+        }
+        $count = $mapQuery->count();
+        if ($count <= 0) {
+            $this->delete();
+        }
+    }
+
+    public function delete()
+    {
+        $id = $this->id;
+        $delete = parent::delete();
+        if (file_exists($this->filePath)) {
+            unlink($this->filePath);
+        }
+        FileMap::deleteAll('file_id = ' . $id);
+        return $delete;
     }
 }

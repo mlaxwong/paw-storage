@@ -1,16 +1,16 @@
 <?php
 namespace paw\storage\models;
 
-use Yii;
-use yii\base\Model;
-use yii\base\InvalidConfigException;
-use yii\web\UploadedFile;
-use yii\helpers\ArrayHelper;
 use paw\storage\models\File;
+use Yii;
+use yii\base\InvalidConfigException;
+use yii\base\Model;
+use yii\helpers\ArrayHelper;
+use yii\web\UploadedFile;
 
 class UploadForm extends Model
 {
-    const MODE_ONE      = 'one';
+    const MODE_ONE = 'one';
     const MODE_MULTIPLE = 'multiple';
 
     public $file;
@@ -31,11 +31,17 @@ class UploadForm extends Model
     {
         parent::init();
 
-        if ($this->uploadDir === null) throw new InvalidConfigException(Yii::t('app', 'Configure \'{configure}\' is required', ['configure' => 'uploadDir']));
+        if ($this->uploadDir === null) {
+            throw new InvalidConfigException(Yii::t('app', 'Configure \'{configure}\' is required', ['configure' => 'uploadDir']));
+        }
 
-        if (!file_exists(Yii::getAlias($this->uploadDir))) throw new InvalidConfigException(Yii::t('app', 'Directory \'{path}\' not exists', ['path' => Yii::getAlias($this->uploadDir)]));
+        // if (!file_exists(Yii::getAlias($this->uploadDir))) {
+        //     throw new InvalidConfigException(Yii::t('app', 'Directory \'{path}\' not exists', ['path' => Yii::getAlias($this->uploadDir)]));
+        // }
 
-        if (!in_array($this->mode, [self::MODE_ONE, self::MODE_MULTIPLE])) throw new InvalidConfigException(Yii::t('app', 'Invaild upload mode'));
+        if (!in_array($this->mode, [self::MODE_ONE, self::MODE_MULTIPLE])) {
+            throw new InvalidConfigException(Yii::t('app', 'Invaild upload mode'));
+        }
     }
 
     public function rules()
@@ -47,7 +53,7 @@ class UploadForm extends Model
             ),
         ];
     }
-    
+
     public function beforeValidate()
     {
         $this->file = $this->mode == self::MODE_ONE ? UploadedFile::getInstanceByName($this->fileParam) : UploadedFile::getInstancesByName($this->fileParam);
@@ -56,7 +62,9 @@ class UploadForm extends Model
 
     public function upload()
     {
-        if (!$this->validate()) return false;
+        if (!$this->validate()) {
+            return false;
+        }
 
         try {
             $fileModel = null;
@@ -64,16 +72,14 @@ class UploadForm extends Model
             if ($this->mode == self::MODE_MULTIPLE) {
                 $fileModel = [];
                 foreach ($this->file as $file) {
-                    if (!$model = $this->uploadFile($file))
-                    {
+                    if (!$model = $this->uploadFile($file)) {
                         $transaction->rollBacK();
                         return false;
                     }
                     $fileModel[] = $model;
                 }
             } else {
-                if (!$fileModel = $this->uploadFile($this->file))
-                {
+                if (!$fileModel = $this->uploadFile($this->file)) {
                     $transaction->rollBacK();
                     return false;
                 }
@@ -83,37 +89,52 @@ class UploadForm extends Model
             return $fileModel;
         } catch (\Exception $ex) {
             $transaction->rollBacK();
-            if (YII_DEBUG) throw $ex;
+            if (YII_DEBUG) {
+                throw $ex;
+            }
+
             return false;
         }
     }
 
     protected function uploadFile($file)
     {
-        $uploadDir      = Yii::getAlias($this->uploadDir);
-        $url            = $this->url;
-        $originalName   = $file->baseName;
-        $extension      = $file->extension;
-        $uploadName     = $this->getUploadName($uploadDir, $extension);
-        $type           = $file->type;
-        $size           = $file->size;
+        $uploadDir = Yii::getAlias($this->uploadDir);
+        $url = $this->url;
+        $originalName = $file->baseName;
+        $extension = $file->extension;
+        $uploadName = $this->getUploadName($uploadDir, $extension);
+        $type = $file->type;
+        $size = $file->size;
 
-        $dist           = "$uploadDir/$uploadName.$extension";
+        $dist = "$uploadDir/$uploadName.$extension";
 
-        if (!$file->saveAs($dist)) return false;
+        // create directory if not exists
+        if (!file_exists($uploadDir)) {
+            if (!mkdir($uploadDir, 0777, true)) {
+                return false;
+            }
+        }
+
+        if (!$file->saveAs($dist)) {
+            return false;
+        }
 
         $model = new File([
-            'path'      => $uploadDir,
-            'url'       => $url,
-            'filename'  => "$uploadName.$extension",
-            'name'      => "$originalName.$extension",
+            'path' => $uploadDir,
+            'url' => $url,
+            'filename' => "$uploadName.$extension",
+            'name' => "$originalName.$extension",
             'extension' => $extension,
-            'type'      => $type,
-            'size'      => $size,
+            'type' => $type,
+            'size' => $size,
         ]);
-        if (!$model->save())
-        {
-            if (YII_DEBUG) throw new \Exception(print_r($model->errors, 1));
+        $this->beforeFileModelSave($model);
+        if (!$model->save()) {
+            if (YII_DEBUG) {
+                throw new \Exception(print_r($model->errors, 1));
+            }
+
             return false;
         }
 
@@ -126,7 +147,11 @@ class UploadForm extends Model
         do {
             $uploadName = uniqid();
             $dist = "$uploadDir/$uploadName.$extension";
-        } while (file_exists($dist));
+        } while (file_exists($dist) || File::find()->andWhere(['filename' => "$uploadName.$extension"])->exists());
         return $uploadName;
+    }
+
+    protected function beforeFileModelSave(&$model)
+    {
     }
 }

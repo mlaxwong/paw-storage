@@ -1,11 +1,11 @@
 <?php
 namespace paw\storage\actions;
 
+use paw\storage\models\UploadForm;
+use Yii;
 use yii\base\Action;
 use yii\helpers\ArrayHelper;
-use paw\storage\models\File;
-use paw\storage\models\UploadForm;
-use yii\web\UploadedFile;
+use yii\helpers\Json;
 
 class UploadAction extends Action
 {
@@ -17,19 +17,36 @@ class UploadAction extends Action
 
     public $onFail = null;
 
+    public $modelClass = \paw\storage\models\BucketUploadForm::class;
+
     public function run(bool $multiple = false)
     {
-        $model = new UploadForm(ArrayHelper::merge([
-            'mode' => $multiple ? UploadForm::MODE_MULTIPLE : UploadForm::MODE_ONE
-        ], $this->modelOptions));
+        $modelConfig = ArrayHelper::merge([
+            'class' => $this->modelClass,
+            'mode' => $multiple ? UploadForm::MODE_MULTIPLE : UploadForm::MODE_ONE,
+        ], $this->modelOptions);
+        $model = Yii::createObject($modelConfig);
 
         if ($fileModel = $model->upload()) {
             if (is_callable($this->onSuccess)) {
                 return call_user_func_array($this->onSuccess, [$fileModel, $model, $this]);
+            } else {
+                return Json::encode([
+                    'success' => true,
+                    'preview' => $fileModel->getLink(),
+                    'value' => $fileModel->filename,
+                ]);
             }
         } else {
             if (is_callable($this->onFail)) {
                 return call_user_func_array($this->onFail, [$model, $this]);
+            } else {
+                $errors = array_values($model->getFirstErrors());
+                $error = isset($errors[0]) ? $errors[0] : null;
+                return Json::encode([
+                    'success' => false,
+                    'error' => $error,
+                ]);
             }
         }
     }

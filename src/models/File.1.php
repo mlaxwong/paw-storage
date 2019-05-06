@@ -1,17 +1,15 @@
 <?php
-namespace paw\storage\records;
+namespace paw\storage\models;
 
+use paw\behaviors\IpBehavior;
+use paw\behaviors\TimestampBehavior;
+use paw\storage\models\FileMap;
 use Yii;
+use yii\behaviors\BlameableBehavior;
 use yii\db\ActiveRecord;
 use yii\db\BaseActiveRecord;
-use yii\web\UploadedFile;
 use yii\helpers\Url;
-use yii\helpers\StringHelper;
-use yii\helpers\FileHelper;
-use yii\behaviors\BlameableBehavior;
-use paw\behaviors\TimestampBehavior;
-use paw\behaviors\IpBehavior;
-use paw\storage\records\FileMap;
+use yii\web\UploadedFile;
 
 class File extends ActiveRecord
 {
@@ -54,37 +52,42 @@ class File extends ActiveRecord
     //     return true;
     // }
 
-    public function beforeValidate() 
+    public function beforeValidate()
     {
-        if(!parent::beforeValidate()) return false;
-        
+        if (!parent::beforeValidate()) {
+            return false;
+        }
+
         $this->file = UploadedFile::getInstanceByName('file');
         return true;
     }
 
     public function beforeSave($insert)
     {
-        if (!parent::beforeSave($insert)) return false;
+        if (!parent::beforeSave($insert)) {
+            return false;
+        }
 
-        if ($insert)
-        {
+        if ($insert) {
             $fileObject = $this->file;
-    
-            $extension  = $fileObject->extension;
-            $name       = $fileObject->name;
-            $size       = $fileObject->size;
-            $type       = $fileObject->type;
-    
+
+            $extension = $fileObject->extension;
+            $name = $fileObject->name;
+            $size = $fileObject->size;
+            $type = $fileObject->type;
+
             $uploadDir = $this->getDummyPath();
             $url = '/upload';
-    
+
             do {
                 $fileName = uniqid() . '.' . $extension;
                 $uploadPath = $uploadDir . '/' . $fileName;
             } while (file_exists($uploadPath));
-    
-            if (!$fileObject->saveAs($uploadPath)) return false;
-    
+
+            if (!$fileObject->saveAs($uploadPath)) {
+                return false;
+            }
+
             $this->extension = $extension;
             $this->name = $name;
             $this->size = $size;
@@ -107,7 +110,7 @@ class File extends ActiveRecord
             'type' => 'type',
             'link' => function ($model, $field) {
                 return (string) $model;
-            }
+            },
         ];
     }
 
@@ -159,34 +162,34 @@ class File extends ActiveRecord
                 'file_id' => $this->id,
                 'model_class' => get_class($model),
                 'model_id' => $model->id,
-                'model_attribute' => $attribute, 
+                'model_attribute' => $attribute,
             ];
-            
-            if (FileMap::find()->andWhere($data)->exists()) return true;
+
+            if (FileMap::find()->andWhere($data)->exists()) {
+                return true;
+            }
 
             $map = new FileMap([
                 'file_id' => $this->id,
                 'model_class' => get_class($model),
                 'model_id' => $model->id,
-                'model_attribute' => $attribute, 
+                'model_attribute' => $attribute,
             ]);
-                
-            if (!$map->save())
-            {
+
+            if (!$map->save()) {
                 $transaction->rollBack();
                 return false;
             }
 
             $oldFile = $this->getFilePath();
             $storageDir = $this->getStoragePath();
-            
+
             do {
                 $fileName = uniqid() . '.' . $this->extension;
                 $movePath = $storageDir . '/' . $fileName;
             } while (file_exists($movePath));
 
-            if (!copy($oldFile, $movePath)) 
-            {
+            if (!copy($oldFile, $movePath)) {
                 $transaction->rollBack();
                 return false;
             }
@@ -196,14 +199,13 @@ class File extends ActiveRecord
             $this->url = '/storage';
             $this->is_dummy = false;
 
-            if (!$this->save())
-            {
+            if (!$this->save()) {
                 $transaction->rollBack();
                 return false;
             }
 
             unlink($oldFile);
-            
+
             $transaction->commit();
             return true;
         } catch (Exception $ex) {
