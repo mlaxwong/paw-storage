@@ -1,6 +1,7 @@
 <?php
 namespace paw\storage\behaviors;
 
+use paw\helpers\Json;
 use paw\storage\models\Bucket;
 use paw\storage\models\File;
 use paw\storage\models\FileMap;
@@ -33,24 +34,20 @@ class FileBehavior extends Behavior
 
     public function afterFind($event)
     {
-        $owner = $this->owner;
-        $map = FileMap::find()->andWhere([
-            'model_class' => get_class($owner),
-            'model_id' => $owner->id,
-            'model_attribute' => $this->attribute,
-        ])->one();
-        if ($map) {
-            $owner->{$this->attribute} = $map->file;
+        if ($this->mode == self::MODE_ONE) {
+            $this->findFile();
+        } else {
+            $this->findFiles();
         }
     }
 
     public function afterValidate($event)
     {
         if (!$this->getIsEmpty()) {
-            $file = $this->getFileModel();
-            if (!$file) {
-                $owner = $this->owner;
-                $owner->addError($this->attribute, Yii::t('app', "File '{filename}' not found", ['filename' => $owner->{$this->attribute}]));
+            if ($this->mode == self::MODE_ONE) {
+                $this->validateFile();
+            } else {
+                $this->validateFiles();
             }
         }
     }
@@ -59,10 +56,11 @@ class FileBehavior extends Behavior
     {
         $except = [];
         if (!$this->getIsEmpty()) {
-            $file = $this->getFileModel();
-            $bucket = $this->getBucketModel();
-            $file->belongTo($this->owner, $this->attribute, $bucket);
-            $except[] = $file;
+            if ($this->mode == self::MODE_ONE) {
+                $except = $this->saveFile();
+            } else {
+                $except = $this->saveFiles();
+            }
         }
         $this->destoryUsedImages($except);
     }
@@ -87,15 +85,30 @@ class FileBehavior extends Behavior
             if ($map) {
                 $map->delete();
             }
-
         }
     }
 
-    protected function getFileModel()
+    protected function getFileModel($attributeValue = null)
     {
-        $attributeValue = $this->owner->{$this->attribute};
+        $attributeValue = $attributeValue === null ? $this->owner->{$this->attribute} : $attributeValue;
         $filename = basename($attributeValue);
         return File::findOne(compact('filename'));
+    }
+
+    protected function getFileModels()
+    {
+        $fileModels = [];
+        $attributeValues = $this->owner->{$this->attribute};
+        if (JSON::isJson($attributeValues)) {
+            $attributeValues = JSON::decode($attributeValues);
+        }
+        foreach ($attributeValues as $attributeValue) {
+            $fileModel = $this->getFileModel($attributeValue);
+            if ($fileModel) {
+                $fileModels[] = $fileModel;
+            }
+        }
+        return $fileModels;
     }
 
     protected function getBucketModel()
@@ -122,5 +135,86 @@ class FileBehavior extends Behavior
             return true;
         }
         return !$owner->{$this->attribute};
+    }
+
+    protected function validateFile($file = null)
+    {
+        $file = $file === null ? $this->getFileModel() : $file;
+        if (!$file) {
+            $owner = $this->owner;
+            $owner->addError($this->attribute, Yii::t('app', "File '{filename}' not found", ['filename' => $owner->{$this->attribute}]));
+        }
+    }
+
+    protected function validateFiles()
+    {
+        $files = $this->getFileModels();
+        foreach ($files as $file) {
+            $this->validateFile($file);
+        }
+    }
+
+    protected function saveFile($file = null)
+    {
+        $file = $file === null ? $this->getFileModel() : $file;
+        $bucket = $this->getBucketModel();
+        $file->belongTo($this->owner, $this->attribute, $bucket);
+        return $file;
+    }
+
+    protected function saveFiles()
+    {
+        $owner = $this->owner;
+        $files = $this->getFileModels();
+        foreach ($files as $index => $file) {
+            // save file
+            $file = $this->saveFile($file);
+            $file->refresh();
+
+            // save sort
+            $map = $mapQuery = FileMap::find()->andWhere([
+                'model_class' => get_class($owner),
+                'model_id' => $owner->id,
+                'model_attribute' => $this->attribute,
+                'file_id' => $file->id,
+            ])->one();
+            if ($map->sort != $index) {
+                $map->sort = $index;
+                $map->save();
+            }
+        }
+        return $files;
+    }
+
+    protected function findFile()
+    {
+        $owner = $this->owner;
+        $map = FileMap::find()->andWhere([
+            'model_class' => get_class($owner),
+            'model_id' => $owner->id,
+            'model_attribute' => $this->attribute,
+        ])->one();
+        if ($map) {
+            $owner->{$this->attribute} = $map->file->link;
+        }
+    }
+
+    protected function findFiles()
+    {
+        $owner = $this->owner;
+        $maps = FileMap::find()
+            ->andWhere([
+                'model_class' => get_class($owner),
+                'model_id' => $owner->id,
+                'model_attribute' => $this->attribute,
+            ])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+        if ($maps) {
+            $files = ArrayHelper::getColumn($maps, function ($model) {
+                return $model->file->link;
+            });
+            $owner->{$this->attribute} = $files;
+        }
     }
 }

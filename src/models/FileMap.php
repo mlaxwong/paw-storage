@@ -1,8 +1,8 @@
 <?php
 namespace paw\storage\models;
 
-use yii\db\ActiveRecord;
 use paw\storage\models\File;
+use yii\db\ActiveRecord;
 
 class FileMap extends ActiveRecord
 {
@@ -15,7 +15,7 @@ class FileMap extends ActiveRecord
     {
         return [
             [['file_id', 'model_class', 'model_id', 'model_attribute'], 'required'],
-            [['file_id', 'model_id'], 'integer'],
+            [['file_id', 'model_id', 'sort'], 'integer'],
             [['model_class', 'model_attribute'], 'string'],
         ];
     }
