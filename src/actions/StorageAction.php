@@ -29,7 +29,7 @@ class StorageAction extends Action
     public function run($action = 'upload', bool $multiple = false, $filename = null)
     {
         $this->_multiple = $multiple;
-        $this->_filename = $filename;
+        $this->_filename = basename($filename);
 
         $methodName = 'action' . ucfirst($action);
         $whiteListedActions = ['upload', 'info'];
@@ -85,7 +85,7 @@ class StorageAction extends Action
                     'success' => true,
                     'id' => $fileModel->id,
                     'name' => $fileModel->name,
-                    'preview' => $fileModel->link,
+                    'preview' => Yii::$app->thumbnail->get($fileModel->getLink()),
                 ]);
             }
         } else {

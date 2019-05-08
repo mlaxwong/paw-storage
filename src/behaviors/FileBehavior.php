@@ -46,18 +46,25 @@ class FileBehavior extends Behavior
 
     public function afterValidate($event)
     {
-        $file = $this->getFileModel();
-        if (!$file) {
-            $owner->addError($this->attribute, Yii::t('app', "File '{filename}' not found", ['filename' => $this->owner->{$this->attribute}]));
+        if (!$this->getIsEmpty()) {
+            $file = $this->getFileModel();
+            if (!$file) {
+                $owner = $this->owner;
+                $owner->addError($this->attribute, Yii::t('app', "File '{filename}' not found", ['filename' => $owner->{$this->attribute}]));
+            }
         }
     }
 
     public function afterSave($event)
     {
-        $file = $this->getFileModel();
-        $bucket = $this->getBucketModel();
-        $file->belongTo($this->owner, $this->attribute, $bucket);
-        $this->destoryUsedImages([$file]);
+        $except = [];
+        if (!$this->getIsEmpty()) {
+            $file = $this->getFileModel();
+            $bucket = $this->getBucketModel();
+            $file->belongTo($this->owner, $this->attribute, $bucket);
+            $except[] = $file;
+        }
+        $this->destoryUsedImages($except);
     }
 
     protected function destoryUsedImages($except = [])
@@ -106,5 +113,14 @@ class FileBehavior extends Behavior
             }
         }
         return $this->_bucket;
+    }
+
+    protected function getIsEmpty()
+    {
+        $owner = $this->owner;
+        if (!isset($owner->{$this->attribute})) {
+            return true;
+        }
+        return !$owner->{$this->attribute};
     }
 }

@@ -270,17 +270,75 @@
             "time": "2018-02-23T01:58:20+00:00"
         },
         {
-            "name": "mlaxwong/paw",
-            "version": "1.1.14",
+            "name": "imagine/imagine",
+            "version": "v0.7.1",
             "source": {
                 "type": "git",
-                "url": "https://github.com/mlaxwong/paw.git",
-                "reference": "9e9f1cc0168a69e4e734acea8abf49add0b3dc1d"
+                "url": "https://github.com/avalanche123/Imagine.git",
+                "reference": "a9a702a946073cbca166718f1b02a1e72d742daa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mlaxwong/paw/zipball/9e9f1cc0168a69e4e734acea8abf49add0b3dc1d",
-                "reference": "9e9f1cc0168a69e4e734acea8abf49add0b3dc1d",
+                "url": "https://api.github.com/repos/avalanche123/Imagine/zipball/a9a702a946073cbca166718f1b02a1e72d742daa",
+                "reference": "a9a702a946073cbca166718f1b02a1e72d742daa",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.2"
+            },
+            "require-dev": {
+                "sami/sami": "^3.3",
+                "symfony/phpunit-bridge": "^3.2"
+            },
+            "suggest": {
+                "ext-gd": "to use the GD implementation",
+                "ext-gmagick": "to use the Gmagick implementation",
+                "ext-imagick": "to use the Imagick implementation"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-develop": "0.7-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "Imagine": "lib/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Bulat Shakirzyanov",
+                    "email": "mallluhuct@gmail.com",
+                    "homepage": "http://avalanche123.com"
+                }
+            ],
+            "description": "Image processing for PHP 5.3",
+            "homepage": "http://imagine.readthedocs.org/",
+            "keywords": [
+                "drawing",
+                "graphics",
+                "image manipulation",
+                "image processing"
+            ],
+            "time": "2017-05-16T10:31:22+00:00"
+        },
+        {
+            "name": "mlaxwong/paw",
+            "version": "1.1.15",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mlaxwong/paw.git",
+                "reference": "eef7176138a881fad4146d68df34860bab1ec0fa"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mlaxwong/paw/zipball/eef7176138a881fad4146d68df34860bab1ec0fa",
+                "reference": "eef7176138a881fad4146d68df34860bab1ec0fa",
                 "shasum": ""
             },
             "require": {
@@ -288,6 +346,7 @@
                 "php": ">=5.4.0",
                 "voskobovich/yii2-linker-behavior": "^4.1",
                 "yiisoft/yii2": "^2.0.15",
+                "yiisoft/yii2-imagine": "^2.1",
                 "yiisoft/yii2-swiftmailer": "~2.0.0"
             },
             "require-dev": {
@@ -313,7 +372,7 @@
                 }
             ],
             "description": "Paw Yii2 Framework",
-            "time": "2019-05-01T07:22:35+00:00"
+            "time": "2019-05-08T05:55:02+00:00"
         },
         {
             "name": "mlaxwong/paw-user",
@@ -669,6 +728,54 @@
                 "yii2"
             ],
             "time": "2018-07-05T15:44:47+00:00"
+        },
+        {
+            "name": "yiisoft/yii2-imagine",
+            "version": "2.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/yiisoft/yii2-imagine.git",
+                "reference": "a8a1a068862a86e3395e665bc86e63d5c9b60841"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/yiisoft/yii2-imagine/zipball/a8a1a068862a86e3395e665bc86e63d5c9b60841",
+                "reference": "a8a1a068862a86e3395e665bc86e63d5c9b60841",
+                "shasum": ""
+            },
+            "require": {
+                "imagine/imagine": "~0.6.0 | ~0.7.1",
+                "yiisoft/yii2": "~2.0.0"
+            },
+            "type": "yii2-extension",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "yii\\imagine\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Antonio Ramirez",
+                    "email": "amigo.cobos@gmail.com"
+                }
+            ],
+            "description": "The Imagine integration for the Yii framework",
+            "keywords": [
+                "helper",
+                "image",
+                "imagine",
+                "yii2"
+            ],
+            "time": "2018-02-22T11:57:06+00:00"
         },
         {
             "name": "yiisoft/yii2-swiftmailer",
