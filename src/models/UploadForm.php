@@ -19,6 +19,8 @@ class UploadForm extends Model
 
     public $maxFiles = null;
 
+    public $maxSize = null;
+
     public $mode = self::MODE_ONE;
 
     public $uploadDir = null;
@@ -49,7 +51,8 @@ class UploadForm extends Model
         return [
             ArrayHelper::merge(
                 [['file'], 'file', 'skipOnEmpty' => false, 'extensions' => $this->extensions, 'checkExtensionByMimeType' => false],
-                $this->maxFiles === null ? [] : ['maxFiles' => $this->maxFiles]
+                $this->maxFiles === null ? [] : ['maxFiles' => $this->maxFiles],
+                $this->maxSize === null ? [] : ['maxSize' => $this->maxSize]
             ),
         ];
     }

@@ -329,16 +329,16 @@
         },
         {
             "name": "mlaxwong/paw",
-            "version": "1.1.15",
+            "version": "1.1.16",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mlaxwong/paw.git",
-                "reference": "eef7176138a881fad4146d68df34860bab1ec0fa"
+                "reference": "87a256db802fb9167ce818a5f367308c4c08b3f2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mlaxwong/paw/zipball/eef7176138a881fad4146d68df34860bab1ec0fa",
-                "reference": "eef7176138a881fad4146d68df34860bab1ec0fa",
+                "url": "https://api.github.com/repos/mlaxwong/paw/zipball/87a256db802fb9167ce818a5f367308c4c08b3f2",
+                "reference": "87a256db802fb9167ce818a5f367308c4c08b3f2",
                 "shasum": ""
             },
             "require": {
@@ -372,20 +372,20 @@
                 }
             ],
             "description": "Paw Yii2 Framework",
-            "time": "2019-05-08T05:55:02+00:00"
+            "time": "2019-05-15T10:20:29+00:00"
         },
         {
             "name": "mlaxwong/paw-user",
-            "version": "1.0.6",
+            "version": "1.0.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mlaxwong/paw-user.git",
-                "reference": "03b739ab2bf0ed3ce26fecd82f3dc118e3e8a7c4"
+                "reference": "aba19c03fb7aafd02408f04a761a96e1e92f4df2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mlaxwong/paw-user/zipball/03b739ab2bf0ed3ce26fecd82f3dc118e3e8a7c4",
-                "reference": "03b739ab2bf0ed3ce26fecd82f3dc118e3e8a7c4",
+                "url": "https://api.github.com/repos/mlaxwong/paw-user/zipball/aba19c03fb7aafd02408f04a761a96e1e92f4df2",
+                "reference": "aba19c03fb7aafd02408f04a761a96e1e92f4df2",
                 "shasum": ""
             },
             "require": {
@@ -407,7 +407,7 @@
                     "email": "mlaxwong@gmail.com"
                 }
             ],
-            "time": "2019-04-24T15:57:09+00:00"
+            "time": "2019-05-15T10:29:53+00:00"
         },
         {
             "name": "nterms/yii2-mailqueue",
