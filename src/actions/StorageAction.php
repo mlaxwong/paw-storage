@@ -23,7 +23,10 @@ class StorageAction extends Action
 
     public $modelClass = \paw\storage\models\BucketUploadForm::class;
 
+    public $enableThumbnail = true;
+
     protected $_multiple = null;
+
     protected $_filename = null;
 
     public function run($action = 'upload', bool $multiple = false, $filename = null)
@@ -85,7 +88,7 @@ class StorageAction extends Action
                     'success' => true,
                     'id' => $fileModel->id,
                     'name' => $fileModel->name,
-                    'preview' => Yii::$app->thumbnail->get($fileModel->getLink()),
+                    'preview' => $this->enableThumbnail ? Yii::$app->thumbnail->get($fileModel->getLink()) : $fileModel->getLink(),
                 ]);
             }
         } else {
