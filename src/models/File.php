@@ -56,7 +56,7 @@ class File extends ActiveRecord
     public function getLink()
     {
         $bucket = $this->bucket;
-        $baseUrl = $bucket->url;
+        $baseUrl = Yii::getAlias('@web' . $bucket->url);
         $filename = $this->filename;
         return Url::to("$baseUrl/$filename");
     }
