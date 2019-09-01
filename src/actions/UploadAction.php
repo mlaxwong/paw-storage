@@ -34,7 +34,9 @@ class UploadAction extends Action
                 return Json::encode([
                     'success' => true,
                     'preview' => $fileModel->getLink(),
+                    'isImage' => $this->getIsImage($fileModel->filepath),
                     'value' => $fileModel->filename,
+                    'extension' => $fileModel->extension,
                 ]);
             }
         } else {
@@ -49,5 +51,10 @@ class UploadAction extends Action
                 ]);
             }
         }
+    }
+
+    protected function getIsImage($link)
+    {
+        return @is_array(getimagesize($link)) ? true : false;
     }
 }

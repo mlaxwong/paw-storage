@@ -35,7 +35,7 @@ class StorageAction extends Action
         $this->_filename = basename($filename);
 
         $methodName = 'action' . ucfirst($action);
-        $whiteListedActions = ['upload', 'info'];
+        $whiteListedActions = ['upload', 'info', 'options'];
         if (method_exists($this, $methodName) && \in_array($action, $whiteListedActions)) {
             return call_user_func([$this, $methodName]);
         } else {
@@ -89,6 +89,8 @@ class StorageAction extends Action
                     'id' => $fileModel->id,
                     'name' => $fileModel->name,
                     'preview' => $this->enableThumbnail ? Yii::$app->thumbnail->get($fileModel->getLink()) : $fileModel->getLink(),
+                    'isImage' => $this->getIsImage($fileModel->filepath),
+                    'extension' => $fileModel->extension,
                 ]);
             }
         } else {
@@ -96,6 +98,34 @@ class StorageAction extends Action
                 'success' => false,
             ]);
         }
+    }
+
+    protected function actionOptions()
+    {
+        return Json::encode([
+            'success' => true,
+            'accept' => $this->getClientAccepts(),
+        ]);
+    }
+
+    protected function getClientAccepts()
+    {
+        $extensions = isset($this->modelOptions['extensions']) ? $this->modelOptions['extensions'] : null;
+
+        if (!$extensions) {
+            return '*';
+        }
+
+        $extensionParts = explode(',', $extensions);
+        array_walk($extensionParts, function (&$item, $key) {
+            $extension = trim($item);
+            if (substr($extension, 0, 1) != '.') {
+                $extension = ".$extension";
+            }
+            $item = $extension;
+        });
+
+        return implode(', ', $extensionParts);
     }
 
     protected function getMultiple()
@@ -106,5 +136,10 @@ class StorageAction extends Action
     protected function getFilename()
     {
         return $this->_filename;
+    }
+
+    protected function getIsImage($link)
+    {
+        return @is_array(getimagesize($link)) ? true : false;
     }
 }
