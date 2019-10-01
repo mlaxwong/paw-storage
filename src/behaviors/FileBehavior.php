@@ -57,7 +57,7 @@ class FileBehavior extends Behavior
         $except = [];
         if (!$this->getIsEmpty()) {
             if ($this->mode == self::MODE_ONE) {
-                $except = $this->saveFile();
+                $except = [$this->saveFile()];
             } else {
                 $except = $this->saveFiles();
             }
