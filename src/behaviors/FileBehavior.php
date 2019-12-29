@@ -17,6 +17,7 @@ class FileBehavior extends Behavior
     public $attribute;
     public $mode = self::MODE_ONE;
     public $bucket = 'default';
+    public $baseUrl = null;
 
     protected $_bucket = null;
 
@@ -65,6 +66,15 @@ class FileBehavior extends Behavior
         $this->destoryUsedImages($except);
     }
 
+    public function getAttributeFileModels()
+    {
+        if ($this->mode == self::MODE_ONE) {
+            return [$this->getFileModel()];
+        } else {
+            return $this->getFileModels();
+        }
+    }
+
     protected function destoryUsedImages($except = [])
     {
         $fileIds = ArrayHelper::getColumn($except, 'id');
@@ -92,7 +102,11 @@ class FileBehavior extends Behavior
     {
         $attributeValue = $attributeValue === null ? $this->owner->{$this->attribute} : $attributeValue;
         $filename = basename($attributeValue);
-        return File::findOne(compact('filename'));
+        $fileModel = File::findOne(compact('filename'));
+        if ($this->baseUrl) {
+            $fileModel->baseUrl = $this->baseUrl;
+        }
+        return $fileModel;
     }
 
     protected function getFileModels()
@@ -111,7 +125,7 @@ class FileBehavior extends Behavior
         return $fileModels;
     }
 
-    protected function getBucketModel()
+    public function getBucketModel()
     {
         if ($this->_bucket === null) {
 
@@ -195,7 +209,9 @@ class FileBehavior extends Behavior
             'model_attribute' => $this->attribute,
         ])->one();
         if ($map) {
-            $owner->{$this->attribute} = $map->file->link;
+            $file = $map->file;
+            $file->baseUrl = $this->baseUrl;
+            $owner->{$this->attribute} = $file->link;
         }
     }
 
@@ -212,7 +228,9 @@ class FileBehavior extends Behavior
             ->all();
         if ($maps) {
             $files = ArrayHelper::getColumn($maps, function ($model) {
-                return $model->file->link;
+                $file = $model->file;
+                $file->baseUrl = $this->baseUrl;
+                return $file->link;
             });
             $owner->{$this->attribute} = $files;
         }

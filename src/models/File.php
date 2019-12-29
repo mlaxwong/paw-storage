@@ -15,6 +15,8 @@ class File extends ActiveRecord
 {
     const SCENARIO_USE = 'scenario_use';
 
+    protected $_baseUrl = null;
+
     public function behaviors()
     {
         return [
@@ -53,10 +55,24 @@ class File extends ActiveRecord
         return PATH_BASE . '/dist/storage';
     }
 
-    public function getLink()
+    public function setBaseUrl($baseUrl)
+    {
+        $this->_baseUrl = $baseUrl;
+    }
+
+    protected function getBaseUrl()
     {
         $bucket = $this->bucket;
-        $baseUrl = Yii::getAlias('@web' . $bucket->url);
+        if ($this->_baseUrl === null) {
+            return Yii::getAlias('@web' . $bucket->url);
+        } else {   
+            return Yii::getAlias($this->_baseUrl . $bucket->url);         
+        }
+    }
+
+    public function getLink()
+    {
+        $baseUrl = $this->getBaseUrl();
         $filename = $this->filename;
         return Url::to("$baseUrl/$filename");
     }
@@ -234,5 +250,32 @@ class File extends ActiveRecord
         }
         FileMap::deleteAll('file_id = ' . $id);
         return $delete;
+    }
+
+    public function clone(Bucket $bucket)
+    {
+        $clonePath = Yii::getAlias($bucket->path);
+        $sourcePath = $this->getFilePath();
+        do {
+            $cloneFileName = uniqid() . '.' . $this->extension;
+            $cloneDist = "$clonePath/$cloneFileName";
+        } while(file_exists($cloneDist));
+
+        copy($sourcePath, $cloneDist);
+
+        $clone = new self;
+        $clone->attributes = $this->attributes;
+        $clone->bucket_id = $bucket->id;
+        $clone->path = $clonePath;
+        $clone->filename = $cloneFileName;
+
+        if (!$clone->save(false)) {
+            if (file_exists($cloneDist)) {
+                unlink($cloneDist);
+            }
+            return null;
+        }
+
+        return $clone;
     }
 }

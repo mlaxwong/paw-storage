@@ -25,6 +25,8 @@ class StorageAction extends Action
 
     public $enableThumbnail = true;
 
+    public $baseUrl = null;
+
     protected $_multiple = null;
 
     protected $_filename = null;
@@ -80,6 +82,7 @@ class StorageAction extends Action
     {
         $filename = $this->getFilename();
         $fileModel = File::findOne(compact('filename'));
+        $fileModel->baseUrl = $this->baseUrl;
         if ($fileModel) {
             if (is_callable($this->onInfoSuccess)) {
                 return call_user_func_array($this->onInfoSuccess, [$fileModel, $this]);
