@@ -103,8 +103,10 @@ class FileBehavior extends Behavior
         $attributeValue = $attributeValue === null ? $this->owner->{$this->attribute} : $attributeValue;
         $filename = basename($attributeValue);
         $fileModel = File::findOne(compact('filename'));
-        if ($this->baseUrl) {
-            $fileModel->baseUrl = $this->baseUrl;
+        if ($fileModel) {
+            if ($this->baseUrl) {
+                $fileModel->baseUrl = $this->baseUrl;
+            }
         }
         return $fileModel;
     }
