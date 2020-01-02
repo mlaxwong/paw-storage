@@ -118,10 +118,12 @@ class FileBehavior extends Behavior
         if (JSON::isJson($attributeValues)) {
             $attributeValues = JSON::decode($attributeValues);
         }
-        foreach ($attributeValues as $attributeValue) {
-            $fileModel = $this->getFileModel($attributeValue);
-            if ($fileModel) {
-                $fileModels[] = $fileModel;
+        if (is_array($attributeValues)) {
+            foreach ($attributeValues as $attributeValue) {
+                $fileModel = $this->getFileModel($attributeValue);
+                if ($fileModel) {
+                    $fileModels[] = $fileModel;
+                }
             }
         }
         return $fileModels;
